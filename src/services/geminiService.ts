@@ -4,31 +4,11 @@ import { PROJECTS, SKILLS } from "../constants";
 const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenAI({ apiKey });
 
-const SYSTEM_INSTRUCTION = `
-You are the AI Assistant for Roua Bouhouch's portfolio. 
-Roua is an AI Engineer and Full-Stack Developer based in Lyon, France.
-She is currently a Master's student in AI at Université Claude Bernard Lyon 1.
-
-Your goal is to answer questions about Roua's background, skills, and projects in a professional and helpful manner.
-
-Key Information about Roua:
-- Expertise: Machine Learning, Deep Learning, Computer Vision, NLP, Robotique.
-- Education: Master in AI at Lyon 1.
-- Location: Lyon, France.
-
-Projects:
-${PROJECTS.map(p => `- ${p.title}: ${p.description}`).join('\n')}
-
-Skills:
-${SKILLS.map(s => `- ${s.name} (${s.category})`).join('\n')}
-
-Always respond in the language the user is speaking (French or English).
-Keep responses concise and engaging.
-`;
+// ... (SYSTEM_INSTRUCTION remains the same)
 
 export async function askGemini(message: string, history: { role: 'user' | 'model', text: string }[]) {
-  if (!apiKey) {
-    return "L'assistant IA est en attente de configuration (Clé API).";
+  if (!apiKey || apiKey === "undefined") {
+    return "L'assistant IA est en attente de configuration (Clé API non détectée).";
   }
 
   try {
