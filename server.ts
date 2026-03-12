@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { GoogleGenAI } from "@google/genai";
+import { PROJECTS, SKILLS } from "./src/constants";
 
 async function startServer() {
   const app = express();
@@ -9,31 +10,35 @@ async function startServer() {
 
   app.use(express.json());
 
-  // API Proxy for Gemini - The key stays here on the server!
+  const SYSTEM_PROMPT = `Tu es l'assistant IA du portfolio de Roua Bouhouch. 
+  Roua est une ingénieure IA et développeuse Full-Stack basée à Lyon.
+  Elle est actuellement en Master IA à l'Université Lyon 1.
+  
+  Tes objectifs :
+  - Répondre aux questions sur son parcours, ses compétences et ses projets.
+  - Être professionnel, concis et chaleureux.
+  - Répondre dans la langue de l'utilisateur (Français ou Anglais).
+  
+  Informations sur les projets :
+  ${PROJECTS.map(p => `- ${p.title}: ${p.description}`).join('\n')}
+  
+  Compétences :
+  ${SKILLS.map(s => `- ${s.name} (${s.category})`).join('\n')}`;
+
   app.post("/api/chat", async (req, res) => {
     try {
       const { message, history } = req.body;
       const apiKey = process.env.GEMINI_API_KEY;
 
-      if (!apiKey) {
-        return res.status(500).json({ error: "API Key missing on server" });
+      if (!apiKey || apiKey === "undefined") {
+        return res.status(500).json({ error: "La clé API Gemini n'est pas configurée sur le serveur." });
       }
 
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-1.5-flash",
         contents: [
-          { role: 'user', parts: [{ text: `Tu es l'assistant IA du portfolio de Roua Bouhouch. 
-          Roua est une ingénieure IA et développeuse Full-Stack basée à Lyon.
-          Elle est actuellement en Master IA à l'Université Lyon 1.
-          
-          Tes objectifs :
-          - Répondre aux questions sur son parcours, ses compétences et ses projets.
-          - Être professionnel, concis et chaleureux.
-          - Répondre dans la langue de l'utilisateur (Français ou Anglais).
-          
-          Compétences clés : Machine Learning, Deep Learning, Computer Vision, NLP, Robotique.
-          Projets notables : ResearchMate (RAG), Transfert de mouvement (GAN), Navigation de robots, GNN pour la prédiction de liens.` }] },
+          { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
           ...history.map((m: any) => ({
             role: m.role,
             parts: [{ text: m.text }],
@@ -45,7 +50,7 @@ async function startServer() {
       res.json({ text: response.text });
     } catch (error) {
       console.error("Gemini Error:", error);
-      res.status(500).json({ error: "Failed to communicate with AI" });
+      res.status(500).json({ error: "Erreur de communication avec l'IA." });
     }
   });
 
