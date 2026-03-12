@@ -10,6 +10,17 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Logging middleware to debug requests
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+  });
+
+  // Health check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", env: process.env.NODE_ENV });
+  });
+
   const SYSTEM_PROMPT = `Tu es l'assistant IA du portfolio de Roua Bouhouch. 
   Roua est une ingénieure IA et développeuse Full-Stack basée à Lyon.
   Elle est actuellement en Master IA à l'Université Lyon 1.
