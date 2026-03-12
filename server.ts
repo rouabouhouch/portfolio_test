@@ -19,32 +19,30 @@ async function startServer() {
         return res.status(500).json({ error: "API Key missing on server" });
       }
 
-      const genAI = new GoogleGenAI({ apiKey });
-      const model = genAI.models.getGenerativeModel({ 
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
         model: "gemini-1.5-flash",
-        systemInstruction: `Tu es l'assistant IA du portfolio de Roua Bouhouch. 
-        Roua est une ingénieure IA et développeuse Full-Stack basée à Lyon.
-        Elle est actuellement en Master IA à l'Université Lyon 1.
-        
-        Tes objectifs :
-        - Répondre aux questions sur son parcours, ses compétences et ses projets.
-        - Être professionnel, concis et chaleureux.
-        - Répondre dans la langue de l'utilisateur (Français ou Anglais).
-        
-        Compétences clés : Machine Learning, Deep Learning, Computer Vision, NLP, Robotique.
-        Projets notables : ResearchMate (RAG), Transfert de mouvement (GAN), Navigation de robots, GNN pour la prédiction de liens.`
+        contents: [
+          { role: 'user', parts: [{ text: `Tu es l'assistant IA du portfolio de Roua Bouhouch. 
+          Roua est une ingénieure IA et développeuse Full-Stack basée à Lyon.
+          Elle est actuellement en Master IA à l'Université Lyon 1.
+          
+          Tes objectifs :
+          - Répondre aux questions sur son parcours, ses compétences et ses projets.
+          - Être professionnel, concis et chaleureux.
+          - Répondre dans la langue de l'utilisateur (Français ou Anglais).
+          
+          Compétences clés : Machine Learning, Deep Learning, Computer Vision, NLP, Robotique.
+          Projets notables : ResearchMate (RAG), Transfert de mouvement (GAN), Navigation de robots, GNN pour la prédiction de liens.` }] },
+          ...history.map((m: any) => ({
+            role: m.role,
+            parts: [{ text: m.text }],
+          })),
+          { role: 'user', parts: [{ text: message }] }
+        ]
       });
 
-      const chat = model.startChat({
-        history: history.map((m: any) => ({
-          role: m.role,
-          parts: [{ text: m.text }],
-        })),
-      });
-
-      const result = await chat.sendMessage(message);
-      const response = await result.response;
-      res.json({ text: response.text() });
+      res.json({ text: response.text });
     } catch (error) {
       console.error("Gemini Error:", error);
       res.status(500).json({ error: "Failed to communicate with AI" });
