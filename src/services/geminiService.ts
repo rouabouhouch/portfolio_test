@@ -1,24 +1,34 @@
-import { PROJECTS, SKILLS } from "../constants";
+import { GoogleGenAI } from "@google/genai";
 
-export async function askGemini(message: string, history: { role: 'user' | 'model', text: string }[]) {
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message, history }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Erreur serveur");
-    }
-
-    const data = await response.json();
-    return data.text;
-  } catch (error) {
-    console.error("Gemini Service Error:", error);
-    return "Désolé, je ne peux pas répondre pour le moment. L'assistant est en cours de maintenance.";
+const getApiKey = () => {
+  const key = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!key || key === "MY_GEMINI_API_KEY") {
+    console.error("Gemini API Key is missing or invalid. Please check your environment variables.");
+    return null;
   }
+  return key;
+};
+
+export async function getChatResponse(message: string, history: { role: 'user' | 'model', parts: { text: string }[] }[]) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error("API Key not configured");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+
+  const chat = ai.chats.create({
+    model: "gemini-3-flash-preview",
+    config: {
+      systemInstruction: `You are Aura, an AI assistant for a portfolio website. 
+      You represent the developer (a creative technologist specializing in AI and Web).
+      Be professional, concise, and slightly futuristic in your tone.
+      Answer questions about the developer's skills (React, TypeScript, AI/ML), projects (Neural Vision, Aura Chat), and experience.
+      If you don't know something, be honest but helpful.`,
+    },
+    history: history,
+  });
+
+  const result = await chat.sendMessage({ message });
+  return result.text;
 }
